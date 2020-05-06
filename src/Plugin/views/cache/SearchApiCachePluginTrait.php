@@ -115,14 +115,17 @@ trait SearchApiCachePluginTrait {
     }
 
     $view = $this->getView();
+    $aborted = !empty($view->query->abort);
     $data = [
       'result' => $view->result,
       'total_rows' => isset($view->total_rows) ? $view->total_rows : 0,
       'current_page' => $view->getCurrentPage(),
       'search_api results' => $this->getQuery()->getSearchApiResults(),
+      'aborted' => $aborted,
     ];
 
-    $expire = $this->cacheSetMaxAge($type);
+    // Since this query failed, cache it for a short amount of time.
+    $expire = $aborted ? 0 : $this->cacheSetMaxAge($type);
     if ($expire !== Cache::PERMANENT) {
       $expire += (int) $view->getRequest()->server->get('REQUEST_TIME');
     }
@@ -148,6 +151,10 @@ trait SearchApiCachePluginTrait {
         $view->total_rows = $cache->data['total_rows'];
         $view->setCurrentPage($cache->data['current_page']);
         $view->execute_time = 0;
+        if ($cache->data['aborted']) {
+          // Mark the query as aborted.
+          $view->query->abort();
+        }
 
         // Trick Search API into believing a search happened, to make faceting
         // et al. work.
