@@ -1,0 +1,6 @@
+type: module
+name: 'Language Fallback Test'
+description: 'Provides a language fallback fr => es.'
+package: 'Search API'
+core_version_requirement: ^8.8 || ^9
+hidden: true
